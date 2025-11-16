@@ -7,15 +7,27 @@
 package httpserver_test
 
 import (
+	"errors"
+	"log/slog"
+	"net/http"
 	"path/filepath"
 	"testing"
 
+	"github.com/rs/cors"
 	"github.com/stretchr/testify/require"
 	"github.com/tdrn-org/go-httpserver"
 )
 
-func TestListenTCP(t *testing.T) {
+func TestListenTCPLocalhost(t *testing.T) {
 	server, err := httpserver.Listen(t.Context(), "tcp", "localhost:0")
+	require.NoError(t, err)
+	require.NotNil(t, server)
+	err = server.Close()
+	require.NoError(t, err)
+}
+
+func TestListenTCPAny(t *testing.T) {
+	server, err := httpserver.Listen(t.Context(), "tcp", ":0")
 	require.NoError(t, err)
 	require.NotNil(t, server)
 	err = server.Close()
@@ -28,4 +40,53 @@ func TestListenUnix(t *testing.T) {
 	require.NotNil(t, server)
 	err = server.Close()
 	require.NoError(t, err)
+}
+
+func TestMustListen(t *testing.T) {
+	require.Panics(t, func() {
+		httpserver.MustListen(t.Context(), "tcp", "localhost:-1")
+	})
+}
+
+func TestPing(t *testing.T) {
+	options := []httpserver.ServerOption{
+		httpserver.WithAccessLog(slog.Default()),
+	}
+	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
+		err := server.Ping()
+		require.NoError(t, err)
+	}, options...)
+}
+
+func TestCors(t *testing.T) {
+	options := []httpserver.ServerOption{
+		httpserver.WithCorsOptions(&cors.Options{}),
+		httpserver.WithAccessLog(slog.Default()),
+	}
+	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
+		err := server.Ping()
+		require.NoError(t, err)
+	}, options...)
+}
+
+func runServerTest(t *testing.T, test func(*testing.T, *httpserver.Instance), options ...httpserver.ServerOption) {
+	server, err := httpserver.Listen(t.Context(), "tcp", "localhost:0", options...)
+	require.NoError(t, err)
+	require.NotNil(t, server)
+	server.HandleFunc("/", handlePing)
+	go func() {
+		err := server.Serve()
+		if !errors.Is(err, http.ErrServerClosed) {
+			require.NoError(t, err)
+		}
+	}()
+	test(t, server)
+	err = server.Shutdown(t.Context())
+	require.NoError(t, err)
+	err = server.Close()
+	require.NoError(t, err)
+}
+
+func handlePing(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }

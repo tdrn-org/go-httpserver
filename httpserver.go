@@ -5,76 +5,168 @@
 // of the MIT license. See the LICENSE file for details.
 
 // Package httpserver provides functionality for easy setup of a secure
-// http server using either [net/http] standard implementation or a
-// compatible one.
+// http server based on the [net/http] implementation.
 package httpserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
+	"net/url"
+
+	"github.com/rs/cors"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Instance represents a single http server instance listening on a specifc address.
 type Instance struct {
-	address  string
-	listener net.Listener
-	logger   *slog.Logger
+	defaultLogger *slog.Logger
+	address       string
+	listener      net.Listener
+	serveMux      *http.ServeMux
+	enableTLS     bool
+	certFile      string
+	keyFile       string
+	corsOptions   *cors.Options
+	tracerOptions []trace.TracerOption
+	accessLogger  *slog.Logger
+	httpServer    http.Server
+	logger        *slog.Logger
+	closeFunc     func() error
 }
 
 // Listen creates a new http server instance listening on the given address.
 //
 // See [net.Listen] for parameter semantics.
-func Listen(ctx context.Context, network string, address string) (*Instance, error) {
+func Listen(ctx context.Context, network string, address string, options ...ServerOption) (*Instance, error) {
+	server := &Instance{}
 	listenConfig := &net.ListenConfig{}
+	// Apply all options
+	for _, option := range options {
+		option.Apply(server, listenConfig)
+	}
+	// Set defaults where needed
+	if server.defaultLogger == nil {
+		server.defaultLogger = slog.Default()
+	}
+	if server.serveMux == nil {
+		server.serveMux = http.NewServeMux()
+	}
+	// Setup handler chain according to options (last to first handler)
+	server.httpServer.Handler = server.serveMux
+	enableCorsHandler(server)
+	enableTraceAndAccessLog(server)
+	// Start to listen
 	listener, err := listenConfig.Listen(ctx, network, address)
 	if err != nil {
 		return nil, fmt.Errorf("failed to listen on address '%s' (cause: %w)", address, err)
 	}
+	server.listener = listener
 	listenerAddress := listener.Addr().String()
 	host, _, _ := net.SplitHostPort(address)
 	_, port, _ := net.SplitHostPort(listenerAddress)
-	instanceAddress := listenerAddress
+	serverAddress := listenerAddress
 	if host != "" && port != "" {
-		instanceAddress = host + ":" + port
+		serverAddress = host + ":" + port
 	}
-	logger := slog.Default().With(slog.String("address", instanceAddress))
-	logger.Info("http server listening")
-	instance := &Instance{
-		address:  instanceAddress,
-		listener: listener,
-		logger:   logger,
-	}
-	return instance, nil
+	server.address = serverAddress
+	server.logger = server.defaultLogger.With(slog.String("address", listenerAddress))
+	server.logger.Info("http server listening")
+	server.closeFunc = server.listener.Close
+	return server, nil
 }
 
 // MustListen invokes [Listen] and panics in case of any error.
 func MustListen(ctx context.Context, network string, address string) *Instance {
-	i, err := Listen(ctx, network, address)
+	server, err := Listen(ctx, network, address)
 	if err != nil {
 		panic(err)
 	}
-	return i
-}
-
-// Close closes this http server's listener.
-func (i *Instance) Close() error {
-	return i.listener.Close()
+	return server
 }
 
 // Addr gets this http server's named address.
 //
 // The returned address is based on the address parameter given during
 // [Listen] call and any host name used during this call.
-func (i *Instance) Addr() string {
-	return i.address
+func (server *Instance) Addr() string {
+	return server.address
 }
 
 // ListenerAddr gets this http server's listener address.
 //
 // Any host name given during [Listen] call are resolved to a concrete
 // IP in the returned address.
-func (i *Instance) ListenerAddr() net.Addr {
-	return i.listener.Addr()
+func (server *Instance) ListenerAddr() net.Addr {
+	return server.listener.Addr()
+}
+
+// BaseURL gets this http server's base URL.
+func (server *Instance) BaseURL() *url.URL {
+	scheme := "http"
+	if server.enableTLS {
+		scheme = "https"
+	}
+	return &url.URL{
+		Scheme: scheme,
+		Host:   server.address,
+	}
+}
+
+// Handle registers a handler for the given pattern.
+//
+// See [http.ServeMux.Handle] for details.
+func (server *Instance) Handle(pattern string, handler http.Handler) {
+	server.serveMux.Handle(pattern, handler)
+}
+
+// HandleFunc registers a handler function for the given pattern.
+//
+// See [http.ServeMux.HandleFunc] for details.
+func (server *Instance) HandleFunc(pattern string, handler http.HandlerFunc) {
+	server.serveMux.HandleFunc(pattern, handler)
+}
+
+// Serve invokes [http.Server.Serve] or [http.Server.ServeTLS] depending
+// on the server configuration and starts accepting connections.
+func (server *Instance) Serve() error {
+	server.logger = server.logger.With(slog.String("baseURL", server.BaseURL().String()))
+	server.closeFunc = server.httpServer.Close
+	server.logger.Info("HTTP server starting")
+	var serverErr error
+	if server.enableTLS {
+		serverErr = server.httpServer.ServeTLS(server.listener, server.certFile, server.keyFile)
+	} else {
+		serverErr = server.httpServer.Serve(server.listener)
+	}
+	if errors.Is(serverErr, http.ErrServerClosed) {
+		server.logger.Info("HTTP server stopped")
+	}
+	return serverErr
+}
+
+// Ping pings the http server by accessing the base URL.
+//
+// An error indicates, the connection could not be established.
+func (server *Instance) Ping() error {
+	server.logger.Debug("pinging HTTP server")
+	rsp, err := http.Get(server.BaseURL().String())
+	if err == nil {
+		server.logger.Debug("ping succeeded", slog.String("status", rsp.Status))
+	}
+	return err
+}
+
+// Shutdown invokes [http.Server,Shutdown] and shuts down the http server.
+func (server *Instance) Shutdown(ctx context.Context) error {
+	return server.httpServer.Shutdown(ctx)
+}
+
+// Close invokes [http.Server.Close] or [net.Listener.Close] depending on
+// the http server's state.
+func (server *Instance) Close() error {
+	return server.closeFunc()
 }
