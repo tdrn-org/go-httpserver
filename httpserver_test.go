@@ -53,19 +53,36 @@ func TestPing(t *testing.T) {
 		httpserver.WithAccessLog(slog.Default()),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		err := server.Ping()
+		status, err := server.Ping()
 		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, status)
+	}, options...)
+}
+
+func TestTrustedProxyPolicy(t *testing.T) {
+	networks, err := httpserver.ParseNetworks("10.0.0.0/8")
+	require.NoError(t, err)
+	trustedProxyPolicy := httpserver.AllowNetworks(networks)
+	options := []httpserver.ServerOption{
+		httpserver.WithDefaultAccessLog(),
+		httpserver.WithTrustedProxyPolicy(trustedProxyPolicy),
+	}
+	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
+		status, err := server.Ping()
+		require.NoError(t, err)
+		require.Equal(t, http.StatusForbidden, status)
 	}, options...)
 }
 
 func TestCors(t *testing.T) {
 	options := []httpserver.ServerOption{
+		httpserver.WithDefaultAccessLog(),
 		httpserver.WithCorsOptions(&cors.Options{}),
-		httpserver.WithAccessLog(slog.Default()),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		err := server.Ping()
+		status, err := server.Ping()
 		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, status)
 	}, options...)
 }
 

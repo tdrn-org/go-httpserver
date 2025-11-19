@@ -23,19 +23,21 @@ import (
 
 // Instance represents a single http server instance listening on a specifc address.
 type Instance struct {
-	defaultLogger *slog.Logger
-	address       string
-	listener      net.Listener
-	serveMux      *http.ServeMux
-	enableTLS     bool
-	certFile      string
-	keyFile       string
-	corsOptions   *cors.Options
-	tracerOptions []trace.TracerOption
-	accessLogger  *slog.Logger
-	httpServer    http.Server
-	logger        *slog.Logger
-	closeFunc     func() error
+	defaultLogger      *slog.Logger
+	address            string
+	listener           net.Listener
+	serveMux           *http.ServeMux
+	enableTLS          bool
+	certFile           string
+	keyFile            string
+	tracerOptions      []trace.TracerOption
+	accessLogger       *slog.Logger
+	trustedHeaders     []string
+	trustedProxyPolicy AccessPolicy
+	corsOptions        *cors.Options
+	httpServer         http.Server
+	logger             *slog.Logger
+	closeFunc          func() error
 }
 
 // Listen creates a new http server instance listening on the given address.
@@ -55,9 +57,13 @@ func Listen(ctx context.Context, network string, address string, options ...Serv
 	if server.serveMux == nil {
 		server.serveMux = http.NewServeMux()
 	}
+	if server.trustedHeaders == nil {
+		server.trustedHeaders = defaultTrustedHeaders
+	}
 	// Setup handler chain according to options (last to first handler)
 	server.httpServer.Handler = server.serveMux
 	enableCorsHandler(server)
+	enableTrustedProxyPolicy(server)
 	enableTraceAndAccessLog(server)
 	// Start to listen
 	listener, err := listenConfig.Listen(ctx, network, address)
@@ -151,13 +157,15 @@ func (server *Instance) Serve() error {
 // Ping pings the http server by accessing the base URL.
 //
 // An error indicates, the connection could not be established.
-func (server *Instance) Ping() error {
+// Otherwise the returned http status code is returned.
+func (server *Instance) Ping() (int, error) {
 	server.logger.Debug("pinging HTTP server")
 	rsp, err := http.Get(server.BaseURL().String())
 	if err == nil {
 		server.logger.Debug("ping succeeded", slog.String("status", rsp.Status))
+		return rsp.StatusCode, nil
 	}
-	return err
+	return -1, err
 }
 
 // Shutdown invokes [http.Server,Shutdown] and shuts down the http server.
