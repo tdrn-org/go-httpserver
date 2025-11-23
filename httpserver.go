@@ -36,6 +36,7 @@ type Instance struct {
 	trustedProxyPolicy    AccessPolicy
 	allowedNetworksPolicy AccessPolicy
 	corsOptions           *cors.Options
+	headers               []Header
 	httpServer            http.Server
 	logger                *slog.Logger
 	closeFunc             func() error
@@ -63,6 +64,7 @@ func Listen(ctx context.Context, network string, address string, options ...Serv
 	}
 	// Setup handler chain according to options (last to first handler)
 	server.httpServer.Handler = server.serveMux
+	enableHeaders(server)
 	enableCorsHandler(server)
 	enableAllowedNetworkPolicy(server)
 	enableTrustedProxyPolicy(server)

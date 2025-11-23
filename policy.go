@@ -17,7 +17,7 @@ type AccessPolicy interface {
 }
 
 func WithTrustedProxyPolicy(policy AccessPolicy) ServerOptionFunc {
-	return func(server *Instance, listenConfig *net.ListenConfig) {
+	return func(server *Instance, _ *net.ListenConfig) {
 		server.trustedProxyPolicy = policy
 	}
 }
@@ -32,7 +32,7 @@ func enableTrustedProxyPolicy(server *Instance) {
 }
 
 func WithAllowedNetworksPolicy(policy AccessPolicy) ServerOptionFunc {
-	return func(server *Instance, listenConfig *net.ListenConfig) {
+	return func(server *Instance, _ *net.ListenConfig) {
 		server.allowedNetworksPolicy = policy
 	}
 }

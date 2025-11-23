@@ -22,6 +22,9 @@ const remoteIPHeader string = "X-Remote-IP"
 
 var remoteIP1234 net.IP = net.ParseIP("1.2.3.4")
 
+const dummyHeaderKey string = "X-Dummy"
+const dummyHeaderValue string = "dummy"
+
 func TestListenTCPLocalhost(t *testing.T) {
 	server, err := httpserver.Listen(t.Context(), "tcp", "localhost:0")
 	require.NoError(t, err)
@@ -60,6 +63,19 @@ func TestPing(t *testing.T) {
 		status, err := server.Ping()
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, status)
+	}, options...)
+}
+
+func TestHeader(t *testing.T) {
+	options := []httpserver.ServerOption{
+		httpserver.WithDefaultAccessLog(),
+		httpserver.WithHeaders(httpserver.StaticHeader(dummyHeaderKey, dummyHeaderValue)),
+	}
+	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
+		status, err := http.Get(server.BaseURL().JoinPath("/header").String())
+		require.NoError(t, err)
+		require.Equal(t, dummyHeaderValue, status.Header.Get(dummyHeaderKey))
+		require.Equal(t, http.StatusOK, status.StatusCode)
 	}, options...)
 }
 
@@ -156,6 +172,7 @@ func runServerTest(t *testing.T, test func(*testing.T, *httpserver.Instance), op
 	require.NotNil(t, server)
 	server.HandleFunc("/", handlePing)
 	server.HandleFunc("/remoteip", handleRemoteIP)
+	server.HandleFunc("/header", handleNoop)
 	go func() {
 		err := server.Serve()
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -180,4 +197,8 @@ func handleRemoteIP(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusForbidden
 	}
 	w.WriteHeader(status)
+}
+
+func handleNoop(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
