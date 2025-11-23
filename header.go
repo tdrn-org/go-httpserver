@@ -53,21 +53,3 @@ func (h *headerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h.handler.ServeHTTP(w, r)
 }
-
-func HeaderHandler(handler http.Handler, headers ...Header) http.Handler {
-	handlerHeaders := make([]Header, 0, len(headers))
-	for _, header := range headers {
-		if header != nil {
-			handlerHeaders = append(handlerHeaders, header)
-		}
-	}
-	if len(handlerHeaders) == 0 {
-		return handler
-	}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		for _, header := range handlerHeaders {
-			header.Apply(w, r)
-		}
-		handler.ServeHTTP(w, r)
-	})
-}
