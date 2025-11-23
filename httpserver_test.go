@@ -8,7 +8,7 @@ package httpserver_test
 
 import (
 	"errors"
-	"log/slog"
+	"net"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -17,6 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tdrn-org/go-httpserver"
 )
+
+const remoteIPHeader string = "X-Remote-IP"
+
+var remoteIP1234 net.IP = net.ParseIP("1.2.3.4")
 
 func TestListenTCPLocalhost(t *testing.T) {
 	server, err := httpserver.Listen(t.Context(), "tcp", "localhost:0")
@@ -50,12 +54,27 @@ func TestMustListen(t *testing.T) {
 
 func TestPing(t *testing.T) {
 	options := []httpserver.ServerOption{
-		httpserver.WithAccessLog(slog.Default()),
+		httpserver.WithDefaultAccessLog(),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
 		status, err := server.Ping()
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, status)
+	}, options...)
+}
+
+func TestRemoteIP(t *testing.T) {
+	options := []httpserver.ServerOption{
+		httpserver.WithDefaultAccessLog(),
+		httpserver.WithTrustedHeaders(remoteIPHeader),
+	}
+	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
+		req, err := http.NewRequest(http.MethodGet, server.BaseURL().JoinPath("/remoteip").String(), nil)
+		require.NoError(t, err)
+		req.Header.Add(remoteIPHeader, remoteIP1234.String())
+		status, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, status.StatusCode)
 	}, options...)
 }
 
@@ -68,9 +87,9 @@ func TestTrustedProxyPolicyForbidden(t *testing.T) {
 		httpserver.WithTrustedProxyPolicy(trustedProxyPolicy),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		status, err := server.Ping()
+		statusCode, err := server.Ping()
 		require.NoError(t, err)
-		require.Equal(t, http.StatusForbidden, status)
+		require.Equal(t, http.StatusForbidden, statusCode)
 	}, options...)
 }
 
@@ -83,14 +102,14 @@ func TestTrustedProxyPolicyOK(t *testing.T) {
 		httpserver.WithTrustedProxyPolicy(trustedProxyPolicy),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		status, err := server.Ping()
+		statusCode, err := server.Ping()
 		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, status)
+		require.Equal(t, http.StatusOK, statusCode)
 	}, options...)
 }
 
 func TestAllowedNetworksPolicyForbidden(t *testing.T) {
-	networks, err := httpserver.ParseNetworks("1.2.3.4/32")
+	networks, err := httpserver.ParseNetworks(remoteIP1234.String() + "/32")
 	require.NoError(t, err)
 	allowedNetworksPolicy := httpserver.AllowNetworks(networks)
 	options := []httpserver.ServerOption{
@@ -98,9 +117,9 @@ func TestAllowedNetworksPolicyForbidden(t *testing.T) {
 		httpserver.WithAllowedNetworksPolicy(allowedNetworksPolicy),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		status, err := server.Ping()
+		statusCode, err := server.Ping()
 		require.NoError(t, err)
-		require.Equal(t, http.StatusForbidden, status)
+		require.Equal(t, http.StatusForbidden, statusCode)
 	}, options...)
 }
 
@@ -113,9 +132,9 @@ func TestAllowedNetworksPolicyOK(t *testing.T) {
 		httpserver.WithAllowedNetworksPolicy(allowedNetworksPolicy),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		status, err := server.Ping()
+		statusCode, err := server.Ping()
 		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, status)
+		require.Equal(t, http.StatusOK, statusCode)
 	}, options...)
 }
 
@@ -125,9 +144,9 @@ func TestCors(t *testing.T) {
 		httpserver.WithCorsOptions(&cors.Options{}),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		status, err := server.Ping()
+		statusCode, err := server.Ping()
 		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, status)
+		require.Equal(t, http.StatusOK, statusCode)
 	}, options...)
 }
 
@@ -136,6 +155,7 @@ func runServerTest(t *testing.T, test func(*testing.T, *httpserver.Instance), op
 	require.NoError(t, err)
 	require.NotNil(t, server)
 	server.HandleFunc("/", handlePing)
+	server.HandleFunc("/remoteip", handleRemoteIP)
 	go func() {
 		err := server.Serve()
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -151,4 +171,13 @@ func runServerTest(t *testing.T, test func(*testing.T, *httpserver.Instance), op
 
 func handlePing(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
+}
+
+func handleRemoteIP(w http.ResponseWriter, r *http.Request) {
+	remoteIP := httpserver.GetRequestRemoteIP(r)
+	status := http.StatusOK
+	if !remoteIP1234.Equal(remoteIP) {
+		status = http.StatusForbidden
+	}
+	w.WriteHeader(status)
 }

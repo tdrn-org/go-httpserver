@@ -28,31 +28,6 @@ var defaultTrustedHeaders []string = []string{
 	Header_X_Forwarded_For,
 }
 
-// GetRemoteIP determines the remote IP sending the given http request. nil is
-// returned if no valid remote IP can be determined.
-//
-// The given trusted headers are evaluated to determine the remote IP in case
-// of a proxy setup. If no headers are given or they are empty, the remote IP
-// associated with the given http request is returned.
-func GetRemoteIP(r *http.Request, trustedHeaders ...string) net.IP {
-	for _, trustedHeader := range trustedHeaders {
-		trustedHeaderValue := r.Header.Get(trustedHeader)
-		remoteIPStrings := strings.Split(trustedHeaderValue, ",")
-		for _, remoteIPString := range remoteIPStrings {
-			remoteIP := net.ParseIP(remoteIPString)
-			if remoteIP != nil {
-				return remoteIP
-			}
-		}
-	}
-	remoteAddr := r.RemoteAddr
-	remoteIPString, _, err := net.SplitHostPort(remoteAddr)
-	if err != nil {
-		remoteIPString = remoteAddr
-	}
-	return net.ParseIP(remoteIPString)
-}
-
 type contextKey string
 
 const remoteIPContextKey contextKey = "remoteIP"
@@ -77,7 +52,7 @@ func WithAccessLog(logger *slog.Logger) ServerOptionFunc {
 	}
 }
 
-func WithTrustedHeaders(headers []string) ServerOptionFunc {
+func WithTrustedHeaders(headers ...string) ServerOptionFunc {
 	return func(server *Instance, listenConfig *net.ListenConfig) {
 		server.trustedHeaders = headers
 	}
@@ -104,7 +79,7 @@ const httpStatusCodeAttributeKey string = "http.status_code"
 func (h *traceAndAccessLogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	traceCtx, span := h.tracer.Start(r.Context(), "ServeHTTP", trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attribute.String("path", r.URL.Path)))
 	defer span.End()
-	remoteIP := GetRemoteIP(r, h.trustedHeaders...)
+	remoteIP := getRemoteIP(r, h.trustedHeaders...)
 	if remoteIP == nil {
 		w.WriteHeader(http.StatusBadRequest)
 		span.SetAttributes(attribute.Int(httpStatusCodeAttributeKey, http.StatusBadRequest))
@@ -125,6 +100,25 @@ func (h *traceAndAccessLogHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		h.handler.ServeHTTP(wrappedW, remoteR)
 	}
 	span.SetAttributes(attribute.Int(httpStatusCodeAttributeKey, wrappedW.statusCode))
+}
+
+func getRemoteIP(r *http.Request, trustedHeaders ...string) net.IP {
+	for _, trustedHeader := range trustedHeaders {
+		trustedHeaderValue := r.Header.Get(trustedHeader)
+		remoteIPStrings := strings.Split(trustedHeaderValue, ",")
+		for _, remoteIPString := range remoteIPStrings {
+			remoteIP := net.ParseIP(remoteIPString)
+			if remoteIP != nil {
+				return remoteIP
+			}
+		}
+	}
+	remoteAddr := r.RemoteAddr
+	remoteIPString, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		remoteIPString = remoteAddr
+	}
+	return net.ParseIP(remoteIPString)
 }
 
 type wrappedResponseWriter struct {
