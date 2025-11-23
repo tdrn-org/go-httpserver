@@ -31,6 +31,21 @@ func enableTrustedProxyPolicy(server *Instance) {
 	}
 }
 
+func WithAllowedNetworksPolicy(policy AccessPolicy) ServerOptionFunc {
+	return func(server *Instance, listenConfig *net.ListenConfig) {
+		server.allowedNetworksPolicy = policy
+	}
+}
+
+func enableAllowedNetworkPolicy(server *Instance) {
+	if server.allowedNetworksPolicy != nil {
+		server.httpServer.Handler = &accessPolicyHandler{
+			handler: server.httpServer.Handler,
+			policy:  server.allowedNetworksPolicy,
+		}
+	}
+}
+
 type accessPolicyHandler struct {
 	handler http.Handler
 	policy  AccessPolicy

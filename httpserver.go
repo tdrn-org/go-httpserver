@@ -23,21 +23,22 @@ import (
 
 // Instance represents a single http server instance listening on a specifc address.
 type Instance struct {
-	defaultLogger      *slog.Logger
-	address            string
-	listener           net.Listener
-	serveMux           *http.ServeMux
-	enableTLS          bool
-	certFile           string
-	keyFile            string
-	tracerOptions      []trace.TracerOption
-	accessLogger       *slog.Logger
-	trustedHeaders     []string
-	trustedProxyPolicy AccessPolicy
-	corsOptions        *cors.Options
-	httpServer         http.Server
-	logger             *slog.Logger
-	closeFunc          func() error
+	defaultLogger         *slog.Logger
+	address               string
+	listener              net.Listener
+	serveMux              *http.ServeMux
+	enableTLS             bool
+	certFile              string
+	keyFile               string
+	tracerOptions         []trace.TracerOption
+	accessLogger          *slog.Logger
+	trustedHeaders        []string
+	trustedProxyPolicy    AccessPolicy
+	allowedNetworksPolicy AccessPolicy
+	corsOptions           *cors.Options
+	httpServer            http.Server
+	logger                *slog.Logger
+	closeFunc             func() error
 }
 
 // Listen creates a new http server instance listening on the given address.
@@ -63,6 +64,7 @@ func Listen(ctx context.Context, network string, address string, options ...Serv
 	// Setup handler chain according to options (last to first handler)
 	server.httpServer.Handler = server.serveMux
 	enableCorsHandler(server)
+	enableAllowedNetworkPolicy(server)
 	enableTrustedProxyPolicy(server)
 	enableTraceAndAccessLog(server)
 	// Start to listen

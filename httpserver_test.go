@@ -59,7 +59,7 @@ func TestPing(t *testing.T) {
 	}, options...)
 }
 
-func TestTrustedProxyPolicy(t *testing.T) {
+func TestTrustedProxyPolicyForbidden(t *testing.T) {
 	networks, err := httpserver.ParseNetworks("10.0.0.0/8")
 	require.NoError(t, err)
 	trustedProxyPolicy := httpserver.AllowNetworks(networks)
@@ -71,6 +71,51 @@ func TestTrustedProxyPolicy(t *testing.T) {
 		status, err := server.Ping()
 		require.NoError(t, err)
 		require.Equal(t, http.StatusForbidden, status)
+	}, options...)
+}
+
+func TestTrustedProxyPolicyOK(t *testing.T) {
+	networks, err := httpserver.ParseNetworks("127.0.0.1/32", "::1/128")
+	require.NoError(t, err)
+	trustedProxyPolicy := httpserver.AllowNetworks(networks)
+	options := []httpserver.ServerOption{
+		httpserver.WithDefaultAccessLog(),
+		httpserver.WithTrustedProxyPolicy(trustedProxyPolicy),
+	}
+	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
+		status, err := server.Ping()
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, status)
+	}, options...)
+}
+
+func TestAllowedNetworksPolicyForbidden(t *testing.T) {
+	networks, err := httpserver.ParseNetworks("1.2.3.4/32")
+	require.NoError(t, err)
+	allowedNetworksPolicy := httpserver.AllowNetworks(networks)
+	options := []httpserver.ServerOption{
+		httpserver.WithDefaultAccessLog(),
+		httpserver.WithAllowedNetworksPolicy(allowedNetworksPolicy),
+	}
+	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
+		status, err := server.Ping()
+		require.NoError(t, err)
+		require.Equal(t, http.StatusForbidden, status)
+	}, options...)
+}
+
+func TestAllowedNetworksPolicyOK(t *testing.T) {
+	networks, err := httpserver.ParseNetworks("127.0.0.1/32", "::1/128")
+	require.NoError(t, err)
+	allowedNetworksPolicy := httpserver.AllowNetworks(networks)
+	options := []httpserver.ServerOption{
+		httpserver.WithDefaultAccessLog(),
+		httpserver.WithAllowedNetworksPolicy(allowedNetworksPolicy),
+	}
+	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
+		status, err := server.Ping()
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, status)
 	}, options...)
 }
 
