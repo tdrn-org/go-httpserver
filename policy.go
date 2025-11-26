@@ -12,25 +12,14 @@ import (
 	"net/http"
 )
 
+// AccessPolicy interface is used to define access restrictions
+// based on the accessing remote IP.
 type AccessPolicy interface {
+	// Allow checks whether the given remote IP should be granted access.
 	Allow(remoteIP net.IP) bool
 }
 
-func WithTrustedProxyPolicy(policy AccessPolicy) ServerOptionFunc {
-	return func(server *Instance, _ *net.ListenConfig) {
-		server.trustedProxyPolicy = policy
-	}
-}
-
-func enableTrustedProxyPolicy(server *Instance) {
-	if server.trustedProxyPolicy != nil {
-		server.httpServer.Handler = &accessPolicyHandler{
-			handler: server.httpServer.Handler,
-			policy:  server.trustedProxyPolicy,
-		}
-	}
-}
-
+// WithAllowedNetworksPolicy restricts http server access to the given access policy.
 func WithAllowedNetworksPolicy(policy AccessPolicy) ServerOptionFunc {
 	return func(server *Instance, _ *net.ListenConfig) {
 		server.allowedNetworksPolicy = policy
@@ -60,6 +49,8 @@ func (h *accessPolicyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	h.handler.ServeHTTP(w, r)
 }
 
+// ParseNetworks parses the given CIDR network definitions using
+// [net.ParseCIDR] and returns the parsed networks.
 func ParseNetworks(cidrs ...string) ([]*net.IPNet, error) {
 	networks := make([]*net.IPNet, 0, len(cidrs))
 	for _, cidr := range cidrs {
@@ -72,6 +63,8 @@ func ParseNetworks(cidrs ...string) ([]*net.IPNet, error) {
 	return networks, nil
 }
 
+// AllowNetworks creates an access policy restricting access
+// to the given networks.
 func AllowNetworks(networks []*net.IPNet) AccessPolicy {
 	if len(networks) == 0 {
 		return nil

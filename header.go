@@ -11,22 +11,31 @@ import (
 	"net/http"
 )
 
+// Header interface is used to apply response headers during http
+// request processing.
 type Header interface {
+	// Apply is invoked during http processing to add response headers.
 	Apply(w http.ResponseWriter, r *http.Request)
 }
 
+// HeaderFunc defines the function based Header interface.
 type HeaderFunc func(w http.ResponseWriter, r *http.Request)
 
+// Apply is invoked during http processing to add response headers.
 func (f HeaderFunc) Apply(w http.ResponseWriter, r *http.Request) {
 	f(w, r)
 }
 
+// StaticHeader creates a Header instance setting a single
+// static header.
 func StaticHeader(key string, value string) HeaderFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Add(key, value)
 	}
 }
 
+// WithHeaders defines the Header instances to apply during
+// http request processing.
 func WithHeaders(headers ...Header) ServerOptionFunc {
 	return func(server *Instance, _ *net.ListenConfig) {
 		server.headers = headers

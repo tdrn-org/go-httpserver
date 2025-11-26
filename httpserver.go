@@ -67,7 +67,6 @@ func Listen(ctx context.Context, network string, address string, options ...Serv
 	enableHeaders(server)
 	enableCorsHandler(server)
 	enableAllowedNetworkPolicy(server)
-	enableTrustedProxyPolicy(server)
 	enableTraceAndAccessLog(server)
 	// Start to listen
 	listener, err := listenConfig.Listen(ctx, network, address)
