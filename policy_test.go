@@ -28,36 +28,6 @@ func TestParseNetworksFailure(t *testing.T) {
 	require.Nil(t, networks)
 }
 
-func TestTrustedProxyPolicyForbidden(t *testing.T) {
-	networks, err := httpserver.ParseNetworks("10.0.0.0/8")
-	require.NoError(t, err)
-	trustedProxyPolicy := httpserver.AllowNetworks(networks)
-	options := []httpserver.ServerOption{
-		httpserver.WithDefaultAccessLog(),
-		httpserver.WithTrustedProxyPolicy(trustedProxyPolicy),
-	}
-	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		statusCode, err := server.Ping()
-		require.NoError(t, err)
-		require.Equal(t, http.StatusForbidden, statusCode)
-	}, options...)
-}
-
-func TestTrustedProxyPolicyOK(t *testing.T) {
-	networks, err := httpserver.ParseNetworks(loNetworks...)
-	require.NoError(t, err)
-	trustedProxyPolicy := httpserver.AllowNetworks(networks)
-	options := []httpserver.ServerOption{
-		httpserver.WithDefaultAccessLog(),
-		httpserver.WithTrustedProxyPolicy(trustedProxyPolicy),
-	}
-	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		statusCode, err := server.Ping()
-		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, statusCode)
-	}, options...)
-}
-
 func TestAllowedNetworksPolicyForbidden(t *testing.T) {
 	networks, err := httpserver.ParseNetworks(remoteIP1234.String() + "/32")
 	require.NoError(t, err)

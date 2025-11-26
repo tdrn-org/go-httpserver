@@ -100,7 +100,7 @@ func (h *traceAndAccessLogHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	traceCtx, span := h.tracer.Start(r.Context(), "ServeHTTP", trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attribute.String("path", r.URL.Path)))
 	defer span.End()
 	remoteIP := getRemoteIP(r)
-	if h.trustedProxyPolicy != nil && h.trustedProxyPolicy.Allow(remoteIP) {
+	if h.trustedProxyPolicy == nil || h.trustedProxyPolicy.Allow(remoteIP) {
 		remoteIP = getRemoteIP(r, h.trustedHeaders...)
 	}
 	if remoteIP == nil {
