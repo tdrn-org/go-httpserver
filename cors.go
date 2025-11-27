@@ -13,7 +13,7 @@ import (
 )
 
 // WithCorsOptions enables CORS using the given [cors.Options].
-func WithCorsOptions(options *cors.Options) ServerOptionFunc {
+func WithCorsOptions(options *cors.Options) OptionSetterFunc {
 	return func(server *Instance, listenConfig *net.ListenConfig) {
 		server.corsOptions = options
 	}

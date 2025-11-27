@@ -40,7 +40,7 @@ func GetRequestRemoteIP(r *http.Request) net.IP {
 
 // WithTracerOptions sets the [trace.TracerOptions] to use for for setting up
 // the [otel.Tracer] instance used for tracing.
-func WithTracerOptions(opts ...trace.TracerOption) ServerOptionFunc {
+func WithTracerOptions(opts ...trace.TracerOption) OptionSetterFunc {
 	return func(server *Instance, listenConfig *net.ListenConfig) {
 		server.tracerOptions = opts
 	}
@@ -48,12 +48,12 @@ func WithTracerOptions(opts ...trace.TracerOption) ServerOptionFunc {
 
 // WithDefaultAccessLog enables the access log using the default
 // logger returned by [slog.Default].
-func WithDefaultAccessLog() ServerOptionFunc {
+func WithDefaultAccessLog() OptionSetterFunc {
 	return WithAccessLog(slog.Default())
 }
 
 // WithAccessLog enables the access log using given logger.
-func WithAccessLog(logger *slog.Logger) ServerOptionFunc {
+func WithAccessLog(logger *slog.Logger) OptionSetterFunc {
 	return func(server *Instance, listenConfig *net.ListenConfig) {
 		server.accessLogger = logger
 	}
@@ -61,7 +61,7 @@ func WithAccessLog(logger *slog.Logger) ServerOptionFunc {
 
 // WithTrustedHeaders sets the request headers to examine to
 // determine the remote IP.
-func WithTrustedHeaders(headers ...string) ServerOptionFunc {
+func WithTrustedHeaders(headers ...string) OptionSetterFunc {
 	return func(server *Instance, listenConfig *net.ListenConfig) {
 		server.trustedHeaders = headers
 	}
@@ -70,7 +70,7 @@ func WithTrustedHeaders(headers ...string) ServerOptionFunc {
 // WithTrustedProxyPolicy sets the access policy used to determine
 // whether the accessing host is a trusted proxy and it's headers
 // can be savely evaluated.
-func WithTrustedProxyPolicy(policy AccessPolicy) ServerOptionFunc {
+func WithTrustedProxyPolicy(policy AccessPolicy) OptionSetterFunc {
 	return func(server *Instance, _ *net.ListenConfig) {
 		server.trustedProxyPolicy = policy
 	}

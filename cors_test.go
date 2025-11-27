@@ -16,7 +16,7 @@ import (
 )
 
 func TestCors(t *testing.T) {
-	options := []httpserver.ServerOption{
+	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithCorsOptions(&cors.Options{}),
 	}

@@ -10,20 +10,20 @@ import (
 	"net"
 )
 
-// ServerOption instances are used to apply different options
+// OptionSetter instances are used to apply different options
 // to the http server during creation.
 //
 // See the various With* functions for concrete options.
-type ServerOption interface {
+type OptionSetter interface {
 	Apply(server *Instance, listenConfig *net.ListenConfig)
 }
 
-// ServerOptionFunc functions are used to apply different options
+// OptionSetterFunc functions are used to apply different options
 // to the http server during creation.
 //
 // See the various With* functions for concrete options.
-type ServerOptionFunc func(server *Instance, listenConfig *net.ListenConfig)
+type OptionSetterFunc func(server *Instance, listenConfig *net.ListenConfig)
 
-func (f ServerOptionFunc) Apply(server *Instance, listenConfig *net.ListenConfig) {
+func (f OptionSetterFunc) Apply(server *Instance, listenConfig *net.ListenConfig) {
 	f(server, listenConfig)
 }

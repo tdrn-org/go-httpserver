@@ -23,7 +23,10 @@ import (
 var testdata embed.FS
 
 func testdataFS() fs.ReadDirFS {
-	sub, _ := fs.Sub(testdata, "testdata")
+	sub, err := fs.Sub(testdata, "testdata")
+	if err != nil {
+		panic(err)
+	}
 	return sub.(fs.ReadDirFS)
 }
 
@@ -58,7 +61,7 @@ func TestMustListen(t *testing.T) {
 }
 
 func TestPing(t *testing.T) {
-	options := []httpserver.ServerOption{
+	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
@@ -68,11 +71,11 @@ func TestPing(t *testing.T) {
 	}, options...)
 }
 
-func runServerTest(t *testing.T, test func(*testing.T, *httpserver.Instance), options ...httpserver.ServerOption) {
+func runServerTest(t *testing.T, test func(*testing.T, *httpserver.Instance), options ...httpserver.OptionSetter) {
 	server, err := httpserver.Listen(t.Context(), "tcp", "localhost:0", options...)
 	require.NoError(t, err)
 	require.NotNil(t, server)
-	server.HandleFunc("/", handlePing)
+	server.HandleFunc("/", handleNoop)
 	server.HandleFunc("/remoteip", handleRemoteIP)
 	server.HandleFunc("/header", handleNoop)
 	server.HandleFunc("/test.html", handleTestHtml)
@@ -89,11 +92,7 @@ func runServerTest(t *testing.T, test func(*testing.T, *httpserver.Instance), op
 	require.NoError(t, err)
 }
 
-func handlePing(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
-func handleNoop(w http.ResponseWriter, r *http.Request) {
+func handleNoop(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -106,7 +105,7 @@ func handleRemoteIP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(status)
 }
 
-func handleTestHtml(w http.ResponseWriter, r *http.Request) {
+func handleTestHtml(w http.ResponseWriter, _ *http.Request) {
 	file, err := testdataFS().Open("test.html")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

@@ -45,7 +45,7 @@ type Instance struct {
 // Listen creates a new http server instance listening on the given address.
 //
 // See [net.Listen] for parameter semantics.
-func Listen(ctx context.Context, network string, address string, options ...ServerOption) (*Instance, error) {
+func Listen(ctx context.Context, network string, address string, options ...OptionSetter) (*Instance, error) {
 	server := &Instance{}
 	listenConfig := &net.ListenConfig{}
 	// Apply all options
@@ -168,6 +168,7 @@ func (server *Instance) Ping() (int, error) {
 		server.logger.Debug("ping succeeded", slog.String("status", rsp.Status))
 		return rsp.StatusCode, nil
 	}
+	defer rsp.Body.Close()
 	return -1, err
 }
 

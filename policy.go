@@ -20,7 +20,7 @@ type AccessPolicy interface {
 }
 
 // WithAllowedNetworksPolicy restricts http server access to the given access policy.
-func WithAllowedNetworksPolicy(policy AccessPolicy) ServerOptionFunc {
+func WithAllowedNetworksPolicy(policy AccessPolicy) OptionSetterFunc {
 	return func(server *Instance, _ *net.ListenConfig) {
 		server.allowedNetworksPolicy = policy
 	}

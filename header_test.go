@@ -18,13 +18,14 @@ const dummyHeaderKey string = "X-Dummy"
 const dummyHeaderValue string = "dummy"
 
 func TestHeader(t *testing.T) {
-	options := []httpserver.ServerOption{
+	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithHeaders(httpserver.StaticHeader(dummyHeaderKey, dummyHeaderValue)),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
 		status, err := http.Get(server.BaseURL().JoinPath("/header").String())
 		require.NoError(t, err)
+		defer status.Body.Close()
 		require.Equal(t, dummyHeaderValue, status.Header.Get(dummyHeaderKey))
 		require.Equal(t, http.StatusOK, status.StatusCode)
 	}, options...)

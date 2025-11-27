@@ -28,7 +28,7 @@ func (f HeaderFunc) Apply(w http.ResponseWriter, r *http.Request) {
 
 // StaticHeader creates a Header instance setting a single
 // static header.
-func StaticHeader(key string, value string) HeaderFunc {
+func StaticHeader(key, value string) HeaderFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Add(key, value)
 	}
@@ -36,7 +36,7 @@ func StaticHeader(key string, value string) HeaderFunc {
 
 // WithHeaders defines the Header instances to apply during
 // http request processing.
-func WithHeaders(headers ...Header) ServerOptionFunc {
+func WithHeaders(headers ...Header) OptionSetterFunc {
 	return func(server *Instance, _ *net.ListenConfig) {
 		server.headers = headers
 	}

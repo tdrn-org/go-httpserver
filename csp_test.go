@@ -29,13 +29,14 @@ func TestContentSecurityPolicy(t *testing.T) {
 		ImgSrc:        []string{csp.PolicySelf},
 	}
 	contentSecurityPolicy.AddHashes(csp.HashAlgSHA256, testdataFS())
-	options := []httpserver.ServerOption{
+	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithHeaders(contentSecurityPolicy.Header()),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
 		status, err := http.Get(server.BaseURL().JoinPath("/test.html").String())
 		require.NoError(t, err)
+		defer status.Body.Close()
 		require.Equal(t, contentSecurityPolicyValue, status.Header.Get(csp.HeaderKey))
 		require.Equal(t, http.StatusOK, status.StatusCode)
 	}, options...)

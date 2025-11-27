@@ -20,7 +20,7 @@ const remoteIPHeader string = "X-Remote-IP"
 var remoteIP1234 net.IP = net.ParseIP("1.2.3.4")
 
 func TestRemoteIPNoTrustedProxy(t *testing.T) {
-	options := []httpserver.ServerOption{
+	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithTrustedHeaders(remoteIPHeader),
 	}
@@ -38,7 +38,7 @@ func TestRemoteIPTrustedProxy(t *testing.T) {
 	networks, err := httpserver.ParseNetworks(loNetworks...)
 	require.NoError(t, err)
 	trustedProxyPolicy := httpserver.AllowNetworks(networks)
-	options := []httpserver.ServerOption{
+	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithTrustedHeaders(remoteIPHeader),
 		httpserver.WithTrustedProxyPolicy(trustedProxyPolicy),
@@ -57,7 +57,7 @@ func TestRemoteIPUntrustedProxy(t *testing.T) {
 	networks, err := httpserver.ParseNetworks("10.0.0.0/8")
 	require.NoError(t, err)
 	trustedProxyPolicy := httpserver.AllowNetworks(networks)
-	options := []httpserver.ServerOption{
+	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithTrustedHeaders(remoteIPHeader),
 		httpserver.WithTrustedProxyPolicy(trustedProxyPolicy),
