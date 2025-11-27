@@ -71,14 +71,19 @@ func TestPing(t *testing.T) {
 	}, options...)
 }
 
+const rootPath string = "/"
+const remoteIPPath string = "/remoteip"
+const headerPath string = "/header"
+const testHtmlPath string = "/test.html"
+
 func runServerTest(t *testing.T, test func(*testing.T, *httpserver.Instance), options ...httpserver.OptionSetter) {
 	server, err := httpserver.Listen(t.Context(), "tcp", "localhost:0", options...)
 	require.NoError(t, err)
 	require.NotNil(t, server)
-	server.HandleFunc("/", handleNoop)
-	server.HandleFunc("/remoteip", handleRemoteIP)
-	server.HandleFunc("/header", handleNoop)
-	server.HandleFunc("/test.html", handleTestHtml)
+	server.HandleFunc(rootPath, handleNoop)
+	server.HandleFunc(remoteIPPath, handleRemoteIP)
+	server.HandleFunc(headerPath, handleNoop)
+	server.HandleFunc(testHtmlPath, handleTestHtml)
 	go func() {
 		err := server.Serve()
 		if !errors.Is(err, http.ErrServerClosed) {

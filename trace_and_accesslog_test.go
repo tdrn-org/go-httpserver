@@ -25,7 +25,7 @@ func TestRemoteIPNoTrustedProxy(t *testing.T) {
 		httpserver.WithTrustedHeaders(remoteIPHeader),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		req, err := http.NewRequest(http.MethodGet, server.BaseURL().JoinPath("/remoteip").String(), nil)
+		req, err := http.NewRequest(http.MethodGet, server.BaseURL().JoinPath(remoteIPPath).String(), nil)
 		require.NoError(t, err)
 		req.Header.Add(remoteIPHeader, remoteIP1234.String())
 		status, err := http.DefaultClient.Do(req)
@@ -44,7 +44,7 @@ func TestRemoteIPTrustedProxy(t *testing.T) {
 		httpserver.WithTrustedProxyPolicy(trustedProxyPolicy),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		req, err := http.NewRequest(http.MethodGet, server.BaseURL().JoinPath("/remoteip").String(), nil)
+		req, err := http.NewRequest(http.MethodGet, server.BaseURL().JoinPath(remoteIPPath).String(), nil)
 		require.NoError(t, err)
 		req.Header.Add(remoteIPHeader, remoteIP1234.String())
 		status, err := http.DefaultClient.Do(req)
@@ -63,7 +63,7 @@ func TestRemoteIPUntrustedProxy(t *testing.T) {
 		httpserver.WithTrustedProxyPolicy(trustedProxyPolicy),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		req, err := http.NewRequest(http.MethodGet, server.BaseURL().JoinPath("/remoteip").String(), nil)
+		req, err := http.NewRequest(http.MethodGet, server.BaseURL().JoinPath(remoteIPPath).String(), nil)
 		require.NoError(t, err)
 		req.Header.Add(remoteIPHeader, remoteIP1234.String())
 		status, err := http.DefaultClient.Do(req)

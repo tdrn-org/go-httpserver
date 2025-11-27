@@ -23,7 +23,7 @@ func TestHeader(t *testing.T) {
 		httpserver.WithHeaders(httpserver.StaticHeader(dummyHeaderKey, dummyHeaderValue)),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
-		status, err := http.Get(server.BaseURL().JoinPath("/header").String())
+		status, err := http.Get(server.BaseURL().JoinPath(headerPath).String())
 		require.NoError(t, err)
 		defer status.Body.Close()
 		require.Equal(t, dummyHeaderValue, status.Header.Get(dummyHeaderKey))
