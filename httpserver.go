@@ -27,9 +27,7 @@ type Instance struct {
 	address               string
 	listener              net.Listener
 	serveMux              *http.ServeMux
-	enableTLS             bool
-	certFile              string
-	keyFile               string
+	certificateProvider   CertificateProvider
 	tracerOptions         []trace.TracerOption
 	accessLogger          *slog.Logger
 	trustedHeaders        []string
@@ -116,7 +114,7 @@ func (server *Instance) ListenerAddr() net.Addr {
 // BaseURL gets this http server's base URL.
 func (server *Instance) BaseURL() *url.URL {
 	scheme := "http"
-	if server.enableTLS {
+	if server.certificateProvider != nil {
 		scheme = "https"
 	}
 	return &url.URL{
@@ -146,8 +144,14 @@ func (server *Instance) Serve() error {
 	server.closeFunc = server.httpServer.Close
 	server.logger.Info("HTTP server starting")
 	var serverErr error
-	if server.enableTLS {
-		serverErr = server.httpServer.ServeTLS(server.listener, server.certFile, server.keyFile)
+	if server.certificateProvider != nil {
+		tlsConfig, err := server.certificateProvider.TLSConfig(server)
+		if err != nil {
+			return err
+		}
+		defer server.certificateProvider.Close()
+		server.httpServer.TLSConfig = tlsConfig
+		serverErr = server.httpServer.ServeTLS(server.listener, "", "")
 	} else {
 		serverErr = server.httpServer.Serve(server.listener)
 	}
