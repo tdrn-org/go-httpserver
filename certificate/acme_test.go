@@ -11,7 +11,11 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"io"
+	"net"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -26,7 +30,17 @@ const ACME_DIRECTORY_URL string = "https://localhost:14000/dir"
 const ACME_TLS_ALPN_01_CHALLENGE_PORT int = 5001
 const ACME_HTTP_01_CHALLENGE_PORT int = 5002
 
-func TestACMECertificateProviderHttp01(t *testing.T) {
+func TestACMECertificateProvider(t *testing.T) {
+	host, err := os.Hostname()
+	require.NoError(t, err)
+	if !strings.Contains(strings.Trim(host, "."), ".") {
+		t.Skip()
+	}
+	t.Run("http-01", testACMECertificateProviderHttp01)
+	t.Run("tls-alpn-01", testACMECertificateProviderTlsAlpn01)
+}
+
+func testACMECertificateProviderHttp01(t *testing.T) {
 	httpClient := getPebbleClient(t)
 	provider := &certificate.ACMECertificateProvider{
 		AutoCertManager: autocert.Manager{
@@ -39,10 +53,13 @@ func TestACMECertificateProviderHttp01(t *testing.T) {
 		EnableHttp01Challenge: true,
 		Http01ChallengePort:   ACME_HTTP_01_CHALLENGE_PORT,
 	}
-	runProviderTest(t, provider, httpClient)
+	host, err := os.Hostname()
+	require.NoError(t, err)
+	serverAddr := net.JoinHostPort(host, strconv.Itoa(ACME_TLS_ALPN_01_CHALLENGE_PORT))
+	runProviderTest(t, serverAddr, provider, httpClient)
 }
 
-func TestACMECertificateProviderTlsAlpn01(t *testing.T) {
+func testACMECertificateProviderTlsAlpn01(t *testing.T) {
 	httpClient := getPebbleClient(t)
 	provider := &certificate.ACMECertificateProvider{
 		AutoCertManager: autocert.Manager{
@@ -53,7 +70,10 @@ func TestACMECertificateProviderTlsAlpn01(t *testing.T) {
 			},
 		},
 	}
-	runProviderTest(t, provider, httpClient)
+	host, err := os.Hostname()
+	require.NoError(t, err)
+	serverAddr := net.JoinHostPort(host, strconv.Itoa(ACME_TLS_ALPN_01_CHALLENGE_PORT))
+	runProviderTest(t, serverAddr, provider, httpClient)
 }
 
 func getPebbleClient(t *testing.T) *http.Client {

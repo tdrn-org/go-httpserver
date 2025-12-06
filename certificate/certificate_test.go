@@ -8,21 +8,15 @@ package certificate_test
 
 import (
 	"errors"
-	"net"
 	"net/http"
-	"os"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tdrn-org/go-httpserver"
 )
 
-func runProviderTest(t *testing.T, provider httpserver.CertificateProvider, httpClient *http.Client) {
-	host, err := os.Hostname()
-	require.NoError(t, err)
-	serverAddr := net.JoinHostPort(host, strconv.Itoa(ACME_TLS_ALPN_01_CHALLENGE_PORT))
-	server, err := httpserver.Listen(t.Context(), "tcp", serverAddr, httpserver.WithCertificateProvider(provider))
+func runProviderTest(t *testing.T, address string, provider httpserver.CertificateProvider, httpClient *http.Client) {
+	server, err := httpserver.Listen(t.Context(), "tcp", address, httpserver.WithCertificateProvider(provider))
 	require.NoError(t, err)
 	server.HandleFunc("/", func(_ http.ResponseWriter, _ *http.Request) { /* noop */ })
 	go func() {
