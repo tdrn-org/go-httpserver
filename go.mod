@@ -4,7 +4,10 @@ go 1.25
 
 require github.com/stretchr/testify v1.11.1
 
-require golang.org/x/text v0.31.0 // indirect
+require (
+	github.com/tdrn-org/go-conf v0.0.4 // indirect
+	golang.org/x/text v0.31.0 // indirect
+)
 
 require (
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -18,6 +21,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1
+	github.com/tdrn-org/go-tlsconf v0.0.5
 	go.opentelemetry.io/otel/trace v1.38.0
 	golang.org/x/crypto v0.45.0
 	golang.org/x/net v0.47.0

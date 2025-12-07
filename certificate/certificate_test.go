@@ -7,13 +7,36 @@
 package certificate_test
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tdrn-org/go-httpserver"
+	"github.com/tdrn-org/go-httpserver/certificate"
+	"github.com/tdrn-org/go-tlsconf/tlsserver"
 )
+
+func TestSimpleCertificateProvider(t *testing.T) {
+	address := "localhost:0"
+	cert, err := tlsserver.GenerateEphemeralCertificate(address, tlsserver.CertificateAlgorithmDefault)
+	require.NoError(t, err)
+	provider := &certificate.SimpleCertificateProvider{
+		Certificates: []tls.Certificate{*cert},
+	}
+	trustedCerts := x509.NewCertPool()
+	trustedCerts.AddCert(cert.Leaf)
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: trustedCerts,
+			},
+		},
+	}
+	runProviderTest(t, address, provider, httpClient)
+}
 
 func runProviderTest(t *testing.T, address string, provider httpserver.CertificateProvider, httpClient *http.Client) {
 	server, err := httpserver.Listen(t.Context(), "tcp", address, httpserver.WithCertificateProvider(provider))
