@@ -32,9 +32,9 @@ type contextKey string
 
 const remoteIPContextKey contextKey = "remoteIP"
 
-// GetRequestRemoteIP gets the remote IP the given [http.Request] is
+// RequestRemoteIP gets the remote IP the given [http.Request] is
 // originating from.
-func GetRequestRemoteIP(r *http.Request) net.IP {
+func RequestRemoteIP(r *http.Request) net.IP {
 	return r.Context().Value(remoteIPContextKey).(net.IP)
 }
 
@@ -99,9 +99,9 @@ const httpStatusCodeAttributeKey string = "http.status_code"
 func (h *traceAndAccessLogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	traceCtx, span := h.tracer.Start(r.Context(), "ServeHTTP", trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attribute.String("path", r.URL.Path)))
 	defer span.End()
-	remoteIP := getRemoteIP(r)
+	remoteIP := requestRemoteIP(r)
 	if h.trustedProxyPolicy == nil || h.trustedProxyPolicy.Allow(remoteIP) {
-		remoteIP = getRemoteIP(r, h.trustedHeaders...)
+		remoteIP = requestRemoteIP(r, h.trustedHeaders...)
 	}
 	if remoteIP == nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -125,7 +125,7 @@ func (h *traceAndAccessLogHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	span.SetAttributes(attribute.Int(httpStatusCodeAttributeKey, wrappedW.statusCode))
 }
 
-func getRemoteIP(r *http.Request, trustedHeaders ...string) net.IP {
+func requestRemoteIP(r *http.Request, trustedHeaders ...string) net.IP {
 	for _, trustedHeader := range trustedHeaders {
 		trustedHeaderValue := r.Header.Get(trustedHeader)
 		remoteIPStrings := strings.Split(trustedHeaderValue, ",")
@@ -184,7 +184,7 @@ func (b *logBuilder) appendTime() {
 	b.WriteString(time.Now().Format(" [02/Jan/2006:15:04:05 -0700]"))
 }
 
-func (b *logBuilder) appendRequest(method string, path string, proto string) {
+func (b *logBuilder) appendRequest(method, path, proto string) {
 	b.WriteString(" \"")
 	b.WriteString(method)
 	b.WriteRune(' ')
@@ -194,7 +194,7 @@ func (b *logBuilder) appendRequest(method string, path string, proto string) {
 	b.WriteRune('"')
 }
 
-func (b *logBuilder) appendStatus(statusCode int, written int) {
+func (b *logBuilder) appendStatus(statusCode, written int) {
 	b.WriteRune(' ')
 	b.WriteString(strconv.Itoa(statusCode))
 	b.WriteRune(' ')

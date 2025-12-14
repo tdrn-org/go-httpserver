@@ -22,12 +22,12 @@ import (
 //go:embed all:testdata/*
 var testdata embed.FS
 
-func testdataFS() fs.ReadDirFS {
+func testdataFS() (fs.ReadDirFS, error) {
 	sub, err := fs.Sub(testdata, "testdata")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return sub.(fs.ReadDirFS)
+	return sub.(fs.ReadDirFS), nil
 }
 
 func TestListenTCPLocalhost(t *testing.T) {
@@ -102,7 +102,7 @@ func handleNoop(w http.ResponseWriter, _ *http.Request) {
 }
 
 func handleRemoteIP(w http.ResponseWriter, r *http.Request) {
-	remoteIP := httpserver.GetRequestRemoteIP(r)
+	remoteIP := httpserver.RequestRemoteIP(r)
 	status := http.StatusOK
 	if !remoteIP1234.Equal(remoteIP) {
 		status = http.StatusForbidden
@@ -111,7 +111,12 @@ func handleRemoteIP(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleTestHtml(w http.ResponseWriter, _ *http.Request) {
-	file, err := testdataFS().Open("test.html")
+	fs, err := testdataFS()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	file, err := fs.Open("test.html")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

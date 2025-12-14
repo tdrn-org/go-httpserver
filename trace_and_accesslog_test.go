@@ -37,7 +37,7 @@ func TestRemoteIPNoTrustedProxy(t *testing.T) {
 func TestRemoteIPTrustedProxy(t *testing.T) {
 	networks, err := httpserver.ParseNetworks(loNetworks...)
 	require.NoError(t, err)
-	trustedProxyPolicy := httpserver.AllowNetworks(networks)
+	trustedProxyPolicy := httpserver.AllowNetworks("", networks)
 	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithTrustedHeaders(remoteIPHeader),
@@ -56,7 +56,7 @@ func TestRemoteIPTrustedProxy(t *testing.T) {
 func TestRemoteIPUntrustedProxy(t *testing.T) {
 	networks, err := httpserver.ParseNetworks("10.0.0.0/8")
 	require.NoError(t, err)
-	trustedProxyPolicy := httpserver.AllowNetworks(networks)
+	trustedProxyPolicy := httpserver.AllowNetworks("", networks)
 	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithTrustedHeaders(remoteIPHeader),

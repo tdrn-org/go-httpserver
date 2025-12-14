@@ -21,7 +21,7 @@ type SimpleCertificateProvider struct {
 	Certificates []tls.Certificate
 }
 
-func (p *SimpleCertificateProvider) TLSConfig(server *httpserver.Instance) (*tls.Config, error) {
+func (p *SimpleCertificateProvider) TLSConfig(_ *httpserver.Instance) (*tls.Config, error) {
 	tlsConfig := &tls.Config{
 		Certificates: slices.Clone(p.Certificates),
 	}

@@ -31,7 +31,7 @@ func TestParseNetworksFailure(t *testing.T) {
 func TestAllowedNetworksPolicyForbidden(t *testing.T) {
 	networks, err := httpserver.ParseNetworks(remoteIP1234.String() + "/32")
 	require.NoError(t, err)
-	allowedNetworksPolicy := httpserver.AllowNetworks(networks)
+	allowedNetworksPolicy := httpserver.AllowNetworks("", networks)
 	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithAllowedNetworksPolicy(allowedNetworksPolicy),
@@ -44,9 +44,9 @@ func TestAllowedNetworksPolicyForbidden(t *testing.T) {
 }
 
 func TestAllowedNetworksPolicyOK(t *testing.T) {
-	networks, err := httpserver.ParseNetworks("127.0.0.1/32", "::1/128")
+	networks, err := httpserver.ParseNetworks(loNetworks...)
 	require.NoError(t, err)
-	allowedNetworksPolicy := httpserver.AllowNetworks(networks)
+	allowedNetworksPolicy := httpserver.AllowNetworks("", networks)
 	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithAllowedNetworksPolicy(allowedNetworksPolicy),

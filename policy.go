@@ -8,6 +8,7 @@ package httpserver
 
 import (
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 )
@@ -15,6 +16,8 @@ import (
 // AccessPolicy interface is used to define access restrictions
 // based on the accessing remote IP.
 type AccessPolicy interface {
+	// Name gets the name of this policy.
+	Name() string
 	// Allow checks whether the given remote IP should be granted access.
 	Allow(remoteIP net.IP) bool
 }
@@ -31,6 +34,7 @@ func enableAllowedNetworkPolicy(server *Instance) {
 		server.httpServer.Handler = &accessPolicyHandler{
 			handler: server.httpServer.Handler,
 			policy:  server.allowedNetworksPolicy,
+			logger:  func() *slog.Logger { return server.logger },
 		}
 	}
 }
@@ -38,11 +42,13 @@ func enableAllowedNetworkPolicy(server *Instance) {
 type accessPolicyHandler struct {
 	handler http.Handler
 	policy  AccessPolicy
+	logger  func() *slog.Logger
 }
 
 func (h *accessPolicyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	remoteIP := GetRequestRemoteIP(r)
+	remoteIP := RequestRemoteIP(r)
 	if !h.policy.Allow(remoteIP) {
+		h.logger().Info("access denied by policy", slog.Any("remoteIP", remoteIP), slog.String("policy", h.policy.Name()))
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -65,15 +71,24 @@ func ParseNetworks(cidrs ...string) ([]*net.IPNet, error) {
 
 // AllowNetworks creates an access policy restricting access
 // to the given networks.
-func AllowNetworks(networks []*net.IPNet) AccessPolicy {
+func AllowNetworks(name string, networks []*net.IPNet) AccessPolicy {
 	if len(networks) == 0 {
 		return nil
 	}
-	return &networkAccessPolicy{networks: networks}
+	policyName := name
+	if policyName == "" {
+		policyName = fmt.Sprintf("allow: %v", networks)
+	}
+	return &networkAccessPolicy{name: policyName, networks: networks}
 }
 
 type networkAccessPolicy struct {
+	name     string
 	networks []*net.IPNet
+}
+
+func (p *networkAccessPolicy) Name() string {
+	return p.name
 }
 
 func (p *networkAccessPolicy) Allow(remoteIP net.IP) bool {

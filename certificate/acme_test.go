@@ -41,7 +41,7 @@ func TestACMECertificateProvider(t *testing.T) {
 }
 
 func testACMECertificateProviderHttp01(t *testing.T) {
-	httpClient := getPebbleClient(t)
+	httpClient := pebbleClient(t)
 	provider := &certificate.ACMECertificateProvider{
 		AutoCertManager: autocert.Manager{
 			Prompt: autocert.AcceptTOS,
@@ -60,7 +60,7 @@ func testACMECertificateProviderHttp01(t *testing.T) {
 }
 
 func testACMECertificateProviderTlsAlpn01(t *testing.T) {
-	httpClient := getPebbleClient(t)
+	httpClient := pebbleClient(t)
 	provider := &certificate.ACMECertificateProvider{
 		AutoCertManager: autocert.Manager{
 			Prompt: autocert.AcceptTOS,
@@ -76,7 +76,7 @@ func testACMECertificateProviderTlsAlpn01(t *testing.T) {
 	runProviderTest(t, serverAddr, provider, httpClient)
 }
 
-func getPebbleClient(t *testing.T) *http.Client {
+func pebbleClient(t *testing.T) *http.Client {
 	trustedCerts := x509.NewCertPool()
 	insecure := true
 	insecureClient := &http.Client{

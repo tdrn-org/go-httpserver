@@ -28,7 +28,9 @@ func TestContentSecurityPolicy(t *testing.T) {
 		StyleSrc:      []string{csp.PolicySelf},
 		ImgSrc:        []string{csp.PolicySelf},
 	}
-	contentSecurityPolicy.AddHashes(csp.HashAlgSHA256, testdataFS())
+	fs, err := testdataFS()
+	require.NoError(t, err)
+	contentSecurityPolicy.AddHashes(csp.HashAlgSHA256, fs)
 	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithHeaders(contentSecurityPolicy.Header()),
