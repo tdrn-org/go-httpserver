@@ -48,7 +48,7 @@ type accessPolicyHandler struct {
 func (h *accessPolicyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	remoteIP := RequestRemoteIP(r)
 	if !h.policy.Allow(remoteIP) {
-		h.logger().Info("access denied by policy", slog.Any("remoteIP", remoteIP), slog.String("policy", h.policy.Name()))
+		h.logger().Info("http server access denied by policy", slog.Any("remoteIP", remoteIP), slog.String("policy", h.policy.Name()))
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}

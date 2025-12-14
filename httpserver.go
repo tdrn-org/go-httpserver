@@ -142,7 +142,7 @@ func (server *Instance) HandleFunc(pattern string, handler http.HandlerFunc) {
 func (server *Instance) Serve() error {
 	server.logger = server.logger.With(slog.String("baseURL", server.BaseURL().String()))
 	server.closeFunc = server.httpServer.Close
-	server.logger.Info("HTTP server starting")
+	server.logger.Info("http server starting")
 	var serverErr error
 	if server.certificateProvider != nil {
 		tlsConfig, err := server.certificateProvider.TLSConfig(server)
@@ -156,7 +156,7 @@ func (server *Instance) Serve() error {
 		serverErr = server.httpServer.Serve(server.listener)
 	}
 	if errors.Is(serverErr, http.ErrServerClosed) {
-		server.logger.Info("HTTP server stopped")
+		server.logger.Info("http server stopped")
 	}
 	return serverErr
 }
