@@ -34,7 +34,7 @@ func TestACMECertificateProvider(t *testing.T) {
 	host, err := os.Hostname()
 	require.NoError(t, err)
 	if !strings.Contains(strings.Trim(host, "."), ".") {
-		t.Skip()
+		t.Skip("hostname has no domain; skipping ACME test")
 	}
 	t.Run("http-01", testACMECertificateProviderHttp01)
 	t.Run("tls-alpn-01", testACMECertificateProviderTlsAlpn01)
@@ -97,7 +97,9 @@ func pebbleClient(t *testing.T) *http.Client {
 	trustedCertURLs := []string{ROOT_CERT_URL, INTERMEDIATE_CERT_URL}
 	for _, url := range trustedCertURLs {
 		response, err := insecureClient.Get(url)
-		require.NoError(t, err)
+		if err != nil {
+			t.Skipf("ACME test server not available (cause: %v); skipping ACME test", err)
+		}
 		require.Equal(t, http.StatusOK, response.StatusCode)
 		defer response.Body.Close()
 		rest, err := io.ReadAll(response.Body)
