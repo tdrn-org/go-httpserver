@@ -34,7 +34,7 @@ type FileCertificateProvider struct {
 	cachedCertificate *tls.Certificate
 }
 
-func (p *FileCertificateProvider) TLSConfig(server *httpserver.Instance) (*tls.Config, error) {
+func (p *FileCertificateProvider) TLSConfig(_ *httpserver.Instance) (*tls.Config, error) {
 	err := p.reloadCertificate()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load certificate (cause: %w)", err)
