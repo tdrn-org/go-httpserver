@@ -14,19 +14,33 @@ import (
 	"github.com/tdrn-org/go-httpserver"
 )
 
-const dummyHeaderKey string = "X-Dummy"
-const dummyHeaderValue string = "dummy"
+const testHeaderKey string = "X-Test"
+const testHeaderValue string = "test"
+
+var testHeader httpserver.Header = httpserver.StaticHeader(testHeaderKey, testHeaderValue)
 
 func TestWithHeaders(t *testing.T) {
 	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
-		httpserver.WithHeaders(httpserver.StaticHeader(dummyHeaderKey, dummyHeaderValue)),
+		httpserver.WithHeaders(testHeader),
 	}
 	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
 		status, err := http.Get(server.BaseURL().JoinPath(headerPath).String())
 		require.NoError(t, err)
 		defer status.Body.Close()
-		require.Equal(t, dummyHeaderValue, status.Header.Get(dummyHeaderKey))
+		require.Equal(t, testHeaderValue, status.Header.Get(testHeaderKey))
 		require.Equal(t, http.StatusOK, status.StatusCode)
 	}, options...)
+}
+
+func TestHeaderHandler(t *testing.T) {
+	runServerTest(t, func(t *testing.T, server *httpserver.Instance) {
+		path := "/test_header_handler"
+		server.HandleFunc(path, httpserver.HeaderHandlerFunc(handleNoop, testHeader))
+		status, err := http.Get(server.BaseURL().JoinPath(path).String())
+		require.NoError(t, err)
+		defer status.Body.Close()
+		require.Equal(t, testHeaderValue, status.Header.Get(testHeaderKey))
+		require.Equal(t, http.StatusOK, status.StatusCode)
+	})
 }

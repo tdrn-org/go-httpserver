@@ -71,13 +71,16 @@ func TestPing(t *testing.T) {
 	}, options...)
 }
 
+const testNetwork string = "tcp"
+const testAddress string = "localhost:0"
+
 const rootPath string = "/"
 const remoteIPPath string = "/remoteip"
 const headerPath string = "/header"
 const testHtmlPath string = "/test.html"
 
 func runServerTest(t *testing.T, test func(*testing.T, *httpserver.Instance), options ...httpserver.OptionSetter) {
-	server, err := httpserver.Listen(t.Context(), "tcp", "localhost:0", options...)
+	server, err := httpserver.Listen(t.Context(), testNetwork, testAddress, options...)
 	require.NoError(t, err)
 	require.NotNil(t, server)
 	server.HandleFunc(rootPath, handleNoop)
