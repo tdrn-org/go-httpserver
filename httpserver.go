@@ -127,6 +127,7 @@ func (server *Instance) BaseURL() *url.URL {
 //
 // See [http.ServeMux.Handle] for details.
 func (server *Instance) Handle(pattern string, handler http.Handler) {
+	server.logger.Info("registering handler", slog.String("pattern", pattern))
 	server.serveMux.Handle(pattern, handler)
 }
 
@@ -134,6 +135,7 @@ func (server *Instance) Handle(pattern string, handler http.Handler) {
 //
 // See [http.ServeMux.HandleFunc] for details.
 func (server *Instance) HandleFunc(pattern string, handler http.HandlerFunc) {
+	server.logger.Info("registering handler", slog.String("pattern", pattern))
 	server.serveMux.HandleFunc(pattern, handler)
 }
 
