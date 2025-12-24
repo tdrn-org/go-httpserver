@@ -17,7 +17,7 @@ import (
 const dummyHeaderKey string = "X-Dummy"
 const dummyHeaderValue string = "dummy"
 
-func TestHeader(t *testing.T) {
+func TestWithHeaders(t *testing.T) {
 	options := []httpserver.OptionSetter{
 		httpserver.WithDefaultAccessLog(),
 		httpserver.WithHeaders(httpserver.StaticHeader(dummyHeaderKey, dummyHeaderValue)),

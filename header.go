@@ -43,12 +43,30 @@ func WithHeaders(headers ...Header) OptionSetterFunc {
 }
 
 func enableHeaders(server *Instance) {
-	if server.headers != nil {
+	if len(server.headers) > 0 {
 		server.httpServer.Handler = &headerHandler{
 			handler: server.httpServer.Handler,
 			headers: server.headers,
 		}
 	}
+}
+
+// HeaderHandler wraps the given [http.Handler] by applying the given headers
+// prior to any http request forwarded to the handler.
+func HeaderHandler(handler http.Handler, headers ...Header) http.Handler {
+	if len(headers) == 0 {
+		return handler
+	}
+	return &headerHandler{
+		handler: handler,
+		headers: headers,
+	}
+}
+
+// HeaderHandler wraps the given [http.HandlerFunc] by applying the given headers
+// prior to any http request forwarded to the handler.
+func HeaderHandlerFunc(handler http.HandlerFunc, headers ...Header) http.HandlerFunc {
+	return HeaderHandler(handler, headers...).ServeHTTP
 }
 
 type headerHandler struct {
