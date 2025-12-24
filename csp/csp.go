@@ -70,14 +70,23 @@ const HeaderKey string = "Content-Security-Policy"
 // in case no explicit CSP policy can be determined for a requested path.
 const Default string = "base-uri: 'none';default-src: 'none';"
 
-// CSP policy 'none'
-const PolicyNone string = "'none'"
+// CSP source 'none'
+const SrcNone string = "'none'"
 
-// CSP policy 'self'
-const PolicySelf string = "'self'"
+// CSP source 'self'
+const SrcSelf string = "'self'"
 
-// CSP policy 'unsafe-inline'
-const PolicyUnsafeInline string = "'unsafe-inline'"
+// CSP source 'unsafe-inline'
+const SrcUnsafeInline string = "'unsafe-inline'"
+
+// CSP source 'unsafe-eval'
+const SrcUnsafeEval string = "'unsafe-eval'"
+
+// CSP source https:
+const SrcHttps string = "https:"
+
+// CSP source data:
+const SrcData string = "data:"
 
 // ContentSecurityPolicy represents a template for CSP header creation.
 //
@@ -257,7 +266,7 @@ func (b *contentSecurityPolicyBuilder) writeFetchDirective(directive string, src
 	b.WriteString(directive)
 	ignoreHashes := false
 	for _, src := range srcs {
-		ignoreHashes = ignoreHashes || (src == PolicyUnsafeInline)
+		ignoreHashes = ignoreHashes || (src == SrcUnsafeInline)
 		b.WriteRune(' ')
 		b.WriteString(src)
 	}

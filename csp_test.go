@@ -19,14 +19,14 @@ const contentSecurityPolicyValue string = "base-uri 'self';form-action 'self';fr
 
 func TestContentSecurityPolicy(t *testing.T) {
 	contentSecurityPolicy := &csp.ContentSecurityPolicy{
-		BaseUri:       []string{csp.PolicySelf},
-		FormAction:    []string{csp.PolicySelf},
-		FrameAncestor: []string{csp.PolicySelf},
-		DefaultSrc:    []string{csp.PolicySelf},
-		ConnectSrc:    []string{csp.PolicySelf},
-		ScriptSrc:     []string{csp.PolicySelf},
-		StyleSrc:      []string{csp.PolicySelf},
-		ImgSrc:        []string{csp.PolicySelf},
+		BaseUri:       []string{csp.SrcSelf},
+		FormAction:    []string{csp.SrcSelf},
+		FrameAncestor: []string{csp.SrcSelf},
+		DefaultSrc:    []string{csp.SrcSelf},
+		ConnectSrc:    []string{csp.SrcSelf},
+		ScriptSrc:     []string{csp.SrcSelf},
+		StyleSrc:      []string{csp.SrcSelf},
+		ImgSrc:        []string{csp.SrcSelf},
 	}
 	fs, err := testdataFS()
 	require.NoError(t, err)
