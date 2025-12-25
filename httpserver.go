@@ -81,7 +81,7 @@ func Listen(ctx context.Context, network string, address string, options ...Opti
 	}
 	server.address = serverAddress
 	server.logger = server.defaultLogger.With(slog.String("address", listenerAddress))
-	server.logger.Info("http server listening")
+	server.logger.Debug("http server listening")
 	server.closeFunc = server.listener.Close
 	return server, nil
 }
@@ -127,7 +127,7 @@ func (server *Instance) BaseURL() *url.URL {
 //
 // See [http.ServeMux.Handle] for details.
 func (server *Instance) Handle(pattern string, handler http.Handler) {
-	server.logger.Info("registering handler", slog.String("pattern", pattern))
+	server.logger.Debug("registering handler", slog.String("pattern", pattern))
 	server.serveMux.Handle(pattern, handler)
 }
 
@@ -135,7 +135,7 @@ func (server *Instance) Handle(pattern string, handler http.Handler) {
 //
 // See [http.ServeMux.HandleFunc] for details.
 func (server *Instance) HandleFunc(pattern string, handler http.HandlerFunc) {
-	server.logger.Info("registering handler", slog.String("pattern", pattern))
+	server.logger.Debug("registering handler", slog.String("pattern", pattern))
 	server.serveMux.HandleFunc(pattern, handler)
 }
 
@@ -144,7 +144,7 @@ func (server *Instance) HandleFunc(pattern string, handler http.HandlerFunc) {
 func (server *Instance) Serve() error {
 	server.logger = server.logger.With(slog.String("baseURL", server.BaseURL().String()))
 	server.closeFunc = server.httpServer.Close
-	server.logger.Info("http server starting")
+	server.logger.Debug("http server starting")
 	var serverErr error
 	if server.certificateProvider != nil {
 		tlsConfig, err := server.certificateProvider.TLSConfig(server)
@@ -158,7 +158,7 @@ func (server *Instance) Serve() error {
 		serverErr = server.httpServer.Serve(server.listener)
 	}
 	if errors.Is(serverErr, http.ErrServerClosed) {
-		server.logger.Info("http server stopped")
+		server.logger.Debug("http server stopped")
 	}
 	return serverErr
 }
