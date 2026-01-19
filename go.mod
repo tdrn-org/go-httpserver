@@ -7,7 +7,7 @@ require github.com/stretchr/testify v1.11.1
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/tdrn-org/go-conf v0.0.4 // indirect
-	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 )
 
 require (
@@ -24,7 +24,7 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/tdrn-org/go-tlsconf v0.0.5
 	go.opentelemetry.io/otel/trace v1.39.0
-	golang.org/x/crypto v0.46.0
+	golang.org/x/crypto v0.47.0
 	golang.org/x/net v0.48.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
