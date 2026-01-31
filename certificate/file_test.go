@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/tdrn-org/go-httpserver/certificate"
-	"github.com/tdrn-org/go-tlsconf/tlsserver"
+	"github.com/tdrn-org/go-tlsconf"
 )
 
 func TestFileCertificateProvider(t *testing.T) {
@@ -39,7 +39,7 @@ func TestFileCertificateProvider(t *testing.T) {
 }
 
 func generateCertificateFiles(t *testing.T, certFile, keyFile string) *http.Client {
-	certificate, err := tlsserver.GenerateEphemeralCertificate("localhost", tlsserver.CertificateAlgorithmDefault)
+	certificate, err := tlsconf.GenerateEphemeralCertificate("localhost", tlsconf.CertificateAlgorithmDefault, time.Hour)
 	require.NoError(t, err)
 	certBytes := &bytes.Buffer{}
 	for _, certBlockBytes := range certificate.Certificate {

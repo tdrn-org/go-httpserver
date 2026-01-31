@@ -12,16 +12,17 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tdrn-org/go-httpserver"
 	"github.com/tdrn-org/go-httpserver/certificate"
-	"github.com/tdrn-org/go-tlsconf/tlsserver"
+	"github.com/tdrn-org/go-tlsconf"
 )
 
 func TestSimpleCertificateProvider(t *testing.T) {
 	address := "localhost:0"
-	cert, err := tlsserver.GenerateEphemeralCertificate(address, tlsserver.CertificateAlgorithmDefault)
+	cert, err := tlsconf.GenerateEphemeralCertificate(address, tlsconf.CertificateAlgorithmDefault, time.Hour)
 	require.NoError(t, err)
 	provider := &certificate.SimpleCertificateProvider{
 		Certificates: []tls.Certificate{*cert},

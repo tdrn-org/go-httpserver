@@ -6,7 +6,6 @@ require github.com/stretchr/testify v1.11.1
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/tdrn-org/go-conf v0.0.4 // indirect
 	golang.org/x/text v0.33.0 // indirect
 )
 
