@@ -105,9 +105,10 @@ func handleNoop(w http.ResponseWriter, _ *http.Request) {
 }
 
 func handleRemoteIP(w http.ResponseWriter, r *http.Request) {
-	remoteIP := httpserver.RequestRemoteIP(r)
+	remoteIP := httpserver.RemoteIP(r.Context())
+	requestRemoteIP := httpserver.RequestRemoteIP(r)
 	status := http.StatusOK
-	if !remoteIP1234.Equal(remoteIP) {
+	if !requestRemoteIP.Equal(remoteIP) || !remoteIP1234.Equal(remoteIP) {
 		status = http.StatusForbidden
 	}
 	w.WriteHeader(status)

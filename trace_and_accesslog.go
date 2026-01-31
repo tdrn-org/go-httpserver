@@ -32,10 +32,24 @@ type contextKey string
 
 const remoteIPContextKey contextKey = "remoteIP"
 
-// RequestRemoteIP gets the remote IP the given [http.Request] is
-// originating from.
+// RemoteIP gets the remote IP for the given [context.Context].
+// nil is returned in case the remote IP could not be determined.
+func RemoteIP(ctx context.Context) net.IP {
+	value := ctx.Value(remoteIPContextKey)
+	if value == nil {
+		return nil
+	}
+	return value.(net.IP)
+}
+
+// RequestRemoteIP gets the remote IP for the given [http.Request].
+// nil is returned in case the remote IP could not be determined.
 func RequestRemoteIP(r *http.Request) net.IP {
-	return r.Context().Value(remoteIPContextKey).(net.IP)
+	value := r.Context().Value(remoteIPContextKey)
+	if value == nil {
+		return requestRemoteIP(r)
+	}
+	return value.(net.IP)
 }
 
 // WithTracerOptions sets the [trace.TracerOptions] to use for for setting up
