@@ -23,8 +23,8 @@ github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/tdrn-org/go-conf v0.0.4 h1:tfKMROBLaYOqrPHFPRGjlDy9Oy2CXN5iizAYuc4sbT0=
 github.com/tdrn-org/go-conf v0.0.4/go.mod h1:X/Iflg4sWcOoh7hTF+X42Tw+0svEAnayGUEwdrycAZI=
-github.com/tdrn-org/go-tlsconf v0.0.5 h1:0173khUlGAFQM1vEbQF4KmOxvN3qs3eALFAq1rtOJFg=
-github.com/tdrn-org/go-tlsconf v0.0.5/go.mod h1:CWSnvaSx8gSGYTT83o7wDLKnbtqxFRx7T8RZIPkvzbM=
+github.com/tdrn-org/go-tlsconf v0.0.8 h1:WHuRF9sHlN3ETfBz6ZYN4Wbm9Tc0I7tgCWx6oUUsSe4=
+github.com/tdrn-org/go-tlsconf v0.0.8/go.mod h1:CWSnvaSx8gSGYTT83o7wDLKnbtqxFRx7T8RZIPkvzbM=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/otel v1.39.0 h1:8yPrr/S0ND9QEfTfdP9V+SiwT4E0G7Y5MO7p85nis48=
