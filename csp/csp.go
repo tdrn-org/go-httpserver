@@ -108,7 +108,10 @@ type ContentSecurityPolicy struct {
 	// style-src directive content.
 	StyleSrc []string
 	// img-src directive content.
-	ImgSrc       []string
+	ImgSrc []string
+	// object-src directive content.
+	ObjectSrc []string
+	// known hashes
 	scriptHashes map[string][]string
 	styleHashes  map[string][]string
 }
@@ -228,6 +231,9 @@ func (p *ContentSecurityPolicy) policy(path string) string {
 	}
 	if len(p.ImgSrc) > 0 {
 		buffer.writeFetchDirective("img-src", p.ImgSrc, nil)
+	}
+	if len(p.ObjectSrc) > 0 {
+		buffer.writeFetchDirective("object-src", p.ObjectSrc, nil)
 	}
 	return buffer.String()
 }
