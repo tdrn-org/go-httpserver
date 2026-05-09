@@ -7,8 +7,8 @@
 package httpserver_test
 
 import (
-	"net"
 	"net/http"
+	"net/netip"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ import (
 
 const remoteIPHeader string = "X-Remote-IP"
 
-var remoteIP1234 net.IP = net.ParseIP("1.2.3.4")
+var remoteIP1234 netip.Addr = netip.MustParseAddr("1.2.3.4")
 
 func TestRemoteIPNoTrustedProxy(t *testing.T) {
 	options := []httpserver.OptionSetter{

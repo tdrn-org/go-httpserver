@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/netip"
 )
 
 // AccessPolicy interface is used to define access restrictions
@@ -19,7 +20,7 @@ type AccessPolicy interface {
 	// Name gets the name of this policy.
 	Name() string
 	// Allow checks whether the given remote IP should be granted access.
-	Allow(remoteIP net.IP) bool
+	Allow(remoteIP netip.Addr) bool
 }
 
 // WithAllowedNetworksPolicy restricts http server access to the given access policy.
@@ -46,7 +47,12 @@ type accessPolicyHandler struct {
 }
 
 func (h *accessPolicyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	remoteIP := RequestRemoteIP(r)
+	remoteIP, ok := RequestRemoteIP(r)
+	if !ok {
+		h.logger().Warn("http server access denied due to missing remote IP", slog.String("remoteAddr", r.RemoteAddr), slog.String("policy", h.policy.Name()))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	if !h.policy.Allow(remoteIP) {
 		h.logger().Debug("http server access denied by policy", slog.Any("remoteIP", remoteIP), slog.String("policy", h.policy.Name()))
 		w.WriteHeader(http.StatusForbidden)
@@ -57,10 +63,10 @@ func (h *accessPolicyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 // ParseNetworks parses the given CIDR network definitions using
 // [net.ParseCIDR] and returns the parsed networks.
-func ParseNetworks(cidrs ...string) ([]*net.IPNet, error) {
-	networks := make([]*net.IPNet, 0, len(cidrs))
+func ParseNetworks(cidrs ...string) ([]netip.Prefix, error) {
+	networks := make([]netip.Prefix, 0, len(cidrs))
 	for _, cidr := range cidrs {
-		_, network, err := net.ParseCIDR(cidr)
+		network, err := netip.ParsePrefix(cidr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse network: '%s' (cause: %w)", cidr, err)
 		}
@@ -71,7 +77,7 @@ func ParseNetworks(cidrs ...string) ([]*net.IPNet, error) {
 
 // AllowNetworks creates an access policy restricting access
 // to the given networks.
-func AllowNetworks(name string, networks []*net.IPNet) AccessPolicy {
+func AllowNetworks(name string, networks []netip.Prefix) AccessPolicy {
 	if len(networks) == 0 {
 		return nil
 	}
@@ -84,14 +90,14 @@ func AllowNetworks(name string, networks []*net.IPNet) AccessPolicy {
 
 type networkAccessPolicy struct {
 	name     string
-	networks []*net.IPNet
+	networks []netip.Prefix
 }
 
 func (p *networkAccessPolicy) Name() string {
 	return p.name
 }
 
-func (p *networkAccessPolicy) Allow(remoteIP net.IP) bool {
+func (p *networkAccessPolicy) Allow(remoteIP netip.Addr) bool {
 	for _, network := range p.networks {
 		if network.Contains(remoteIP) {
 			return true

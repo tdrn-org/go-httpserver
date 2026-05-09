@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/netip"
 	"reflect"
 	"strconv"
 	"strings"
@@ -34,22 +35,22 @@ const remoteIPContextKey contextKey = "remoteIP"
 
 // RemoteIP gets the remote IP for the given [context.Context].
 // nil is returned in case the remote IP could not be determined.
-func RemoteIP(ctx context.Context) net.IP {
+func RemoteIP(ctx context.Context) (netip.Addr, bool) {
 	value := ctx.Value(remoteIPContextKey)
 	if value == nil {
-		return nil
+		return netip.Addr{}, false
 	}
-	return value.(net.IP)
+	return value.(netip.Addr), true
 }
 
 // RequestRemoteIP gets the remote IP for the given [http.Request].
 // nil is returned in case the remote IP could not be determined.
-func RequestRemoteIP(r *http.Request) net.IP {
+func RequestRemoteIP(r *http.Request) (netip.Addr, bool) {
 	value := r.Context().Value(remoteIPContextKey)
 	if value == nil {
 		return requestRemoteIP(r)
 	}
-	return value.(net.IP)
+	return value.(netip.Addr), true
 }
 
 // WithTracerOptions sets the [trace.TracerOptions] to use for for setting up
@@ -113,11 +114,12 @@ const httpStatusCodeAttributeKey string = "http.status_code"
 func (h *traceAndAccessLogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	traceCtx, span := h.tracer.Start(r.Context(), "ServeHTTP", trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attribute.String("path", r.URL.Path)))
 	defer span.End()
-	remoteIP := requestRemoteIP(r)
-	if h.trustedProxyPolicy == nil || h.trustedProxyPolicy.Allow(remoteIP) {
-		remoteIP = requestRemoteIP(r, h.trustedHeaders...)
+	remoteIP, ok := requestRemoteIP(r)
+
+	if ok && (h.trustedProxyPolicy == nil || h.trustedProxyPolicy.Allow(remoteIP)) {
+		remoteIP, ok = requestRemoteIP(r, h.trustedHeaders...)
 	}
-	if remoteIP == nil {
+	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		span.SetAttributes(attribute.Int(httpStatusCodeAttributeKey, http.StatusBadRequest))
 		return
@@ -139,23 +141,22 @@ func (h *traceAndAccessLogHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	span.SetAttributes(attribute.Int(httpStatusCodeAttributeKey, wrappedW.statusCode))
 }
 
-func requestRemoteIP(r *http.Request, trustedHeaders ...string) net.IP {
+func requestRemoteIP(r *http.Request, trustedHeaders ...string) (netip.Addr, bool) {
 	for _, trustedHeader := range trustedHeaders {
 		trustedHeaderValue := r.Header.Get(trustedHeader)
 		remoteIPStrings := strings.Split(trustedHeaderValue, ",")
 		for _, remoteIPString := range remoteIPStrings {
-			remoteIP := net.ParseIP(remoteIPString)
-			if remoteIP != nil {
-				return remoteIP
+			remoteIP, err := netip.ParseAddr(remoteIPString)
+			if err == nil {
+				return remoteIP, true
 			}
 		}
 	}
-	remoteAddr := r.RemoteAddr
-	remoteIPString, _, err := net.SplitHostPort(remoteAddr)
+	remoteAddr, err := netip.ParseAddrPort(r.RemoteAddr)
 	if err != nil {
-		remoteIPString = remoteAddr
+		return netip.Addr{}, false
 	}
-	return net.ParseIP(remoteIPString)
+	return remoteAddr.Addr(), true
 }
 
 type wrappedResponseWriter struct {
