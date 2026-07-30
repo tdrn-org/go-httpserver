@@ -1,6 +1,6 @@
 module github.com/tdrn-org/go-httpserver
 
-go 1.26
+go 1.26.3
 
 require github.com/stretchr/testify v1.11.1
 
@@ -10,7 +10,7 @@ require (
 )
 
 require (
-	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.44.0
@@ -21,7 +21,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1
-	github.com/tdrn-org/go-tlsconf v0.0.10
+	github.com/tdrn-org/go-tlsconf v0.0.11
 	go.opentelemetry.io/otel/trace v1.44.0
 	golang.org/x/crypto v0.54.0
 	golang.org/x/net v0.57.0
