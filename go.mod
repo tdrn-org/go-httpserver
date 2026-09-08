@@ -22,6 +22,6 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/tdrn-org/go-tlsconf v0.0.12
 	go.opentelemetry.io/otel/trace v1.46.0
-	golang.org/x/crypto v0.55.0
+	golang.org/x/crypto v0.56.0
 	golang.org/x/net v0.58.0
 )
