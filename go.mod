@@ -17,7 +17,7 @@ require (
 require (
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.12.1
-	github.com/tdrn-org/go-tlsconf v0.0.13
+	github.com/tdrn-org/go-tlsconf v0.0.15
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
 	golang.org/x/crypto v0.57.0
