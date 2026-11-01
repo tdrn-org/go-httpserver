@@ -12,13 +12,12 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
+	tracehelper "github.com/tdrn-org/go-trace"
+
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -94,7 +93,7 @@ func WithTrustedProxyPolicy(policy AccessPolicy) OptionSetterFunc {
 func enableTraceAndAccessLog(server *Instance) {
 	server.httpServer.Handler = &traceAndAccessLogHandler{
 		handler:            server.httpServer.Handler,
-		tracer:             otel.Tracer(reflect.TypeFor[Instance]().PkgPath(), server.tracerOptions...),
+		tracer:             tracehelper.NewTracePoint[Instance]("ServeHTTP", server.tracerOptions...),
 		logger:             server.accessLogger,
 		trustedHeaders:     server.trustedHeaders,
 		trustedProxyPolicy: server.trustedProxyPolicy,
@@ -103,42 +102,39 @@ func enableTraceAndAccessLog(server *Instance) {
 
 type traceAndAccessLogHandler struct {
 	handler            http.Handler
-	tracer             trace.Tracer
+	tracer             *tracehelper.TracePoint
 	logger             *slog.Logger
 	trustedHeaders     []string
 	trustedProxyPolicy AccessPolicy
 }
 
-const httpStatusCodeAttributeKey string = "http.status_code"
-
 func (h *traceAndAccessLogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	traceCtx, span := h.tracer.Start(r.Context(), "ServeHTTP", trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attribute.String("path", r.URL.Path)))
+	traceR, span := h.tracer.StartHttpServer(r)
 	defer span.End()
-	remoteIP, ok := requestRemoteIP(r)
+	wrappedW := tracehelper.TraceHttpResponse(span, w)
+	defer wrappedW.Release()
 
+	remoteIP, ok := requestRemoteIP(r)
 	if ok && (h.trustedProxyPolicy == nil || h.trustedProxyPolicy.Allow(remoteIP)) {
 		remoteIP, ok = requestRemoteIP(r, h.trustedHeaders...)
 	}
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		span.SetAttributes(attribute.Int(httpStatusCodeAttributeKey, http.StatusBadRequest))
 		return
 	}
-	remoteCtx := context.WithValue(traceCtx, remoteIPContextKey, remoteIP)
+	remoteCtx := context.WithValue(traceR.Context(), remoteIPContextKey, remoteIP)
 	remoteR := r.WithContext(remoteCtx)
-	wrappedW := &wrappedResponseWriter{wrapped: w, statusCode: http.StatusOK}
 	if h.logger != nil {
 		log := &logBuilder{}
 		log.appendHost(remoteIP.String())
 		log.appendTime()
 		log.appendRequest(r.Method, r.URL.Path, r.Proto)
 		h.handler.ServeHTTP(wrappedW, remoteR)
-		log.appendStatus(wrappedW.statusCode, wrappedW.written)
+		log.appendStatus(wrappedW.StatusCode(), wrappedW.Written())
 		h.logger.Info(log.String())
 	} else {
 		h.handler.ServeHTTP(wrappedW, remoteR)
 	}
-	span.SetAttributes(attribute.Int(httpStatusCodeAttributeKey, wrappedW.statusCode))
 }
 
 func requestRemoteIP(r *http.Request, trustedHeaders ...string) (netip.Addr, bool) {
@@ -157,29 +153,6 @@ func requestRemoteIP(r *http.Request, trustedHeaders ...string) (netip.Addr, boo
 		return netip.Addr{}, false
 	}
 	return remoteAddr.Addr(), true
-}
-
-type wrappedResponseWriter struct {
-	wrapped    http.ResponseWriter
-	written    int
-	statusCode int
-}
-
-func (w *wrappedResponseWriter) Header() http.Header {
-	return w.wrapped.Header()
-}
-
-func (w *wrappedResponseWriter) Write(b []byte) (int, error) {
-	written, err := w.wrapped.Write(b)
-	if written > 0 {
-		w.written += written
-	}
-	return written, err
-}
-
-func (w *wrappedResponseWriter) WriteHeader(statusCode int) {
-	w.statusCode = statusCode
-	w.wrapped.WriteHeader(statusCode)
 }
 
 type logBuilder struct {
