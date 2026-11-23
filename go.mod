@@ -23,5 +23,5 @@ require (
 	github.com/tdrn-org/go-trace v0.0.2
 	go.opentelemetry.io/otel/trace v1.47.0
 	golang.org/x/crypto v0.59.0
-	golang.org/x/net v0.62.0
+	golang.org/x/net v0.63.0
 )
